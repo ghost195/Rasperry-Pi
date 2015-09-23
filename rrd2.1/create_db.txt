@@ -1,0 +1,3 @@
+rrdtool create wetter.rrd --step 60 \
+DS:temp0:GAUGE:1200:-40:80 \
+RRA:AVERAGE:0.5:1:2880 \
