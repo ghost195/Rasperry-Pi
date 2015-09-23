@@ -1,3 +1,11 @@
+RRD Datenbank erzeugen 
+48h Datenbank
+
 rrdtool create wetter.rrd --step 60 \
-DS:temp0:GAUGE:1200:-40:80 \
-RRA:AVERAGE:0.5:1:2880 \
+   DS:temp0:GAUGE:2880:0:60 \
+   DS:feucht0:GAUGE:2880:0:100 \
+   DS:druck0:GAUGE:2880:1000:1500 \
+   DS:ldr0:GAUGE:2880:0:2000 \
+   DS:uv0:GAUGE:2880:0:2000 \
+   DS:o20:GAUGE:2880:0:2000 \
+   RRA:MAX:0.5:1:2880 \

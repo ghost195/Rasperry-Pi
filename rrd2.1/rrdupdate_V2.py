@@ -1,3 +1,4 @@
+#!/usr/local/bin/python
 import MySQLdb
 import sys
 import rrdtool
@@ -10,6 +11,8 @@ import Adafruit_BMP.BMP085 as BMP085
 import time
 import read_mcp3008
 import spidev
+from _ast import Str
+from datetime import datetime
 
 global Sommerzeit 
 Sommerzeit = 7200000
@@ -82,13 +85,17 @@ def get_O2():
 	
 	
 def update():
-	
 	feucht, temp = get_Temp()
+	druck = get_Pressur()
+	ldr = get_LDR()
+	uv = get_LDR2()
+	o2 = get_O2()
 	print temp
+	#rrdtool.update('wetter.rrd','N:'+`temp`)
+	data = "N:%.2f:%.2f:%.2f:%.2f:%.2f:%.2f" % (temp,feucht,druck,ldr,uv,o2)
+	#print data
+	rrdtool.update("%s/wetter.rrd" % (os.path.dirname(os.path.abspath(__file__))),data)
 	
-	
-	rrdtool.update('wetter.rrd','N:'+`temp`)
-		
    
 	
 """"	
@@ -114,3 +121,4 @@ def test():
 """	
 	
 update()
+exit()
