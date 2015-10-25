@@ -1,0 +1,146 @@
+#!/usr/local/bin/python
+import MySQLdb
+import sys
+import rrdtool
+import os
+import sys
+import shutil
+import RPi.GPIO as GPIO
+GPIO.setwarnings(False)
+import Adafruit_BMP.BMP085 as BMP085
+import time
+import read_mcp3008
+import spidev
+from _ast import Str
+from datetime import datetime
+
+global Sommerzeit 
+Sommerzeit = 7200000
+global Winterzeit
+Winterzeit = 3600000
+global aktuelle_Zeit
+aktuelle_Zeit  = Sommerzeit
+#=============================LDR2=================================
+spi = spidev.SpiDev()
+spi.open(0,0)
+
+
+#=============================BMP085=================================
+sensor = BMP085.BMP085()
+
+#=============================DHT22==================================
+import dhtreader
+type = 22
+pin = 22
+dhtreader.init()
+
+def get_Pressur():
+    Druck = sensor.read_pressure()
+    Druck = Druck/100
+    return Druck
+    
+def get_Temp():
+    check = False
+    
+
+	
+    while check == False:
+        
+        data = dhtreader.read(type, pin)
+        if data != None:
+           
+            feuchtigkeit = data[1]
+            feuchtigkeit1 = round(feuchtigkeit, 3)
+            Temperatur = data[0]
+            Temperatur1 = round(Temperatur, 3)
+            #print feuchtigkeit1
+            #print Temperatur1
+            check = True
+            
+            return feuchtigkeit1, Temperatur1
+        else:
+            check = False
+	   
+def no_temp_peak():		#Soll die Peaks im Diagramm verhindern, dies geschieht indem man 2 mal misst
+	i = 0				# den Betrag bildet und die Differenz kleiner wie 9 ist
+	tempalt = 0
+	feuchtalt  = 0
+	tempmess = 0
+	feuchtmess  = 0
+	while i < 2:
+		tempalt, feuchtalt = tempmess , feuchtmess
+		feuchtmess, tempmess  = get_Temp()
+		differenz = tempmess - tempalt
+		abs(differenz)
+		i= i+1
+	if (differenz<9):
+		feuchtigkeit1 = feuchtmess
+		Temperatur1 = tempmess
+		print "passt"
+		return feuchtigkeit1, Temperatur1
+	else:
+		no_temp_peak() #Hier ist noch zu ueberlegen ob das nicht zu einer Schleife fuehrt 
+		print "misst"
+		
+
+def get_LDR():
+    
+    LDR =  read_mcp3008.readAnalogData(0, 11, 10, 9, 8)
+    return LDR
+
+
+def get_LDR2():
+    
+    UV = read_mcp3008.readAnalogData(2, 11, 10, 9, 8)
+    return UV
+        
+
+
+
+def get_O2():
+    # use chip select CE0, channel 0
+    
+    O2 = read_mcp3008.readAnalogData(1, 11, 10, 9, 8)
+    return O2
+        
+
+	
+	
+def update():
+	feucht, temp = no_temp_peak()
+	druck = get_Pressur()
+	ldr = get_LDR()
+	uv = get_LDR2()
+	o2 = get_O2()
+	#print temp
+	#rrdtool.update('wetter.rrd','N:'+`temp`)
+	data = "N:%.2f:%.2f:%.2f:%.2f:%.2f:%.2f" % (temp,feucht,druck,ldr,uv,o2)
+	#print data
+	rrdtool.update("%s/wetter.rrd" % (os.path.dirname(os.path.abspath(__file__))),data)
+	
+   
+	
+""""	
+def update():
+    feucht, temp, Druck, LDR, UV, O2 = load_Values()
+    rrdtool.update('temperatures_all.rrd','N:'+`temp`+":"+`feucht`+":"+`Druck`+":"+`LDR`+":"+`UV`+":"+`O2`)
+
+
+def test():
+    Druck = get_Pressur()
+    feucht, temp = getTemp()
+    LDR = get_LDR()
+    UV = get_UV()
+    O2 = get_O2()
+    data = "N:%.2f:%.2f:%.2f:%.2f:%.2f:%.2f" % (temp, feucht, Druck, LDR, UV, O2)
+    rrdtool.update("%s/temperatures_all.rrd" % (os.path.dirname(os.path.abspath(__file__))),data)
+    #rrdtool.update('temperatures_all.rrd','N:'+`temp`+":"+`feucht`+":"+`Druck`+":"+`LDR`+":"+`UV`+":"+`O2`)
+    
+    f = open('/home/pi/Programmierung/cron.txt','a')
+    f.write('test11111\n')
+    f.close()
+
+"""	
+	
+update()
+exit()
